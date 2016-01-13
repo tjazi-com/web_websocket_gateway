@@ -5,6 +5,9 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.server.RequestUpgradeStrategy;
+import org.springframework.web.socket.server.standard.TomcatRequestUpgradeStrategy;
+import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
 /**
  * Created by Krzysztof Wasiak on 08/01/2016.
@@ -20,7 +23,16 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
     }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry) {
-        stompEndpointRegistry.addEndpoint("/messages").withSockJS();
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+
+        // below configuration based on article:
+        // http://stackoverflow.com/questions/30413380/websocketstompclient-wont-connect-to-sockjs-endpoint
+        registry.addEndpoint("/messages")
+                .withSockJS();
+
+        RequestUpgradeStrategy upgradeStrategy = new TomcatRequestUpgradeStrategy();
+        registry.addEndpoint("/messages ")
+                .setHandshakeHandler(new DefaultHandshakeHandler(upgradeStrategy))
+                .setAllowedOrigins("*");
     }
 }
