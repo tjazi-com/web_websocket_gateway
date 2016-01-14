@@ -11,11 +11,16 @@ import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.StompSessionHandler;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+
+import javax.print.DocFlavor;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -63,6 +68,49 @@ public class WebSocketIntegrationTests {
         }
 
         assertNotNull(sessionHandler.getStompSession());
+    }
+
+    @Test
+    public void per2perMessage_Test() throws InterruptedException {
+
+        String targetReceiver = "/app/messages";
+        String subscriptionChannel = "/app/topic";
+
+        TestStompSessionHandler sessionHandler1 = new TestStompSessionHandler();
+        WebSocketClient webSocketClient1 = this.createAndConnectWebSocketClient(sessionHandler1);
+
+        TestStompSessionHandler sessionHandler2 = new TestStompSessionHandler();
+        WebSocketClient webSocketClient2 = this.createAndConnectWebSocketClient(sessionHandler2);
+
+        sessionHandler1.subscribe(subscriptionChannel);
+        sessionHandler2.subscribe(subscriptionChannel);
+
+        sessionHandler1.send(targetReceiver, "Sample message");
+
+        Thread.sleep(2000);
+
+        List<String> receivedMessagesChannel1 = sessionHandler1.getListOfReceivedMessages();
+        List<String> receivedMessagesChannel2 = sessionHandler1.getListOfReceivedMessages();
+
+        // validation
+        assertEquals(1, receivedMessagesChannel1.size());
+        assertEquals(1, receivedMessagesChannel2.size());
+    }
+
+    private WebSocketClient createAndConnectWebSocketClient(StompSessionHandlerAdapter sessionHandler)
+            throws InterruptedException {
+        WebSocketClient webSocketClient = new StandardWebSocketClient();
+        WebSocketStompClient webSocketStompClient = new WebSocketStompClient(webSocketClient);
+        webSocketStompClient.setMessageConverter(new StringMessageConverter());
+
+        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
+        webSocketStompClient.setTaskScheduler(taskScheduler);
+
+        webSocketStompClient.connect(this.getTargetUrl(), sessionHandler);
+
+        Thread.sleep(2000);
+
+        return webSocketClient;
     }
 
     private String getTargetUrl() {

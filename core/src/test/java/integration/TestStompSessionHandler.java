@@ -1,11 +1,9 @@
 package integration;
 
-import org.springframework.messaging.simp.stomp.StompCommand;
-import org.springframework.messaging.simp.stomp.StompHeaders;
-import org.springframework.messaging.simp.stomp.StompSession;
-import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.messaging.simp.stomp.*;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 /**
  * Created by Krzysztof Wasiak on 13/01/2016.
@@ -13,36 +11,54 @@ import java.lang.reflect.Type;
 public class TestStompSessionHandler extends StompSessionHandlerAdapter {
 
     private StompSession stompSession;
-    private StompHeaders connectedHeaders;
-
     public StompSession getStompSession() {
         return stompSession;
     }
 
+    private StompHeaders connectedHeaders;
     public StompHeaders getConnectedHeaders() {
         return connectedHeaders;
     }
 
+    private ArrayList<String> listOfReceivedMessages;
+    public ArrayList<String> getListOfReceivedMessages() { return listOfReceivedMessages; }
+
+    private StompHeaders latestHeaders;
     public StompHeaders getLatestHeaders() {
         return latestHeaders;
     }
 
+    private Object payLoad;
     public Object getPayLoad() {
         return payLoad;
     }
 
+    private Throwable exception;
     public Throwable getException() {
         return exception;
     }
 
-    private StompHeaders latestHeaders;
-    private Object payLoad;
-    private Throwable exception;
+    public TestStompSessionHandler() {
+        listOfReceivedMessages = new ArrayList<>();
+    }
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         this.stompSession = session;
         this.connectedHeaders = connectedHeaders;
+
+        stompSession.subscribe("/topic", new StompFrameHandler() {
+
+            @Override
+            public Type getPayloadType(StompHeaders stompHeaders) {
+                return byte[].class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders stompHeaders, Object receivedObject) {
+                listOfReceivedMessages.add(new String((byte[]) receivedObject));
+            }
+        });
 
         super.afterConnected(session, connectedHeaders);
     }
@@ -64,5 +80,21 @@ public class TestStompSessionHandler extends StompSessionHandlerAdapter {
     public void handleTransportError(StompSession session, Throwable exception) {
         this.exception = exception;
         super.handleTransportError(session, exception);
+    }
+
+    public void subscribe(String targetChannel) {
+
+        if (stompSession  == null) {
+            throw new IllegalArgumentException("Stomp Session is not set. Please check the connection.");
+        }
+    }
+
+    public void send(String targetChannel, Object objectToSend) {
+
+        if (stompSession  == null) {
+            throw new IllegalArgumentException("Stomp Session is not set. Please check the connection.");
+        }
+
+        stompSession.send(targetChannel, objectToSend);
     }
 }
