@@ -1,5 +1,6 @@
 package integration;
 
+import com.tjazi.web.websocketgateway.core.messages.ChatMessage;
 import org.springframework.messaging.simp.stomp.*;
 
 import java.lang.reflect.Type;
@@ -20,8 +21,8 @@ public class TestStompSessionHandler extends StompSessionHandlerAdapter {
         return connectedHeaders;
     }
 
-    private ArrayList<String> listOfReceivedMessages;
-    public ArrayList<String> getListOfReceivedMessages() { return listOfReceivedMessages; }
+    private ArrayList<ChatMessage> listOfReceivedMessages;
+    public ArrayList<ChatMessage> getListOfReceivedMessages() { return listOfReceivedMessages; }
 
     private StompHeaders latestHeaders;
     public StompHeaders getLatestHeaders() {
@@ -46,19 +47,6 @@ public class TestStompSessionHandler extends StompSessionHandlerAdapter {
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         this.stompSession = session;
         this.connectedHeaders = connectedHeaders;
-
-        stompSession.subscribe("/topic", new StompFrameHandler() {
-
-            @Override
-            public Type getPayloadType(StompHeaders stompHeaders) {
-                return byte[].class;
-            }
-
-            @Override
-            public void handleFrame(StompHeaders stompHeaders, Object receivedObject) {
-                listOfReceivedMessages.add(new String((byte[]) receivedObject));
-            }
-        });
 
         super.afterConnected(session, connectedHeaders);
     }
@@ -87,6 +75,19 @@ public class TestStompSessionHandler extends StompSessionHandlerAdapter {
         if (stompSession  == null) {
             throw new IllegalArgumentException("Stomp Session is not set. Please check the connection.");
         }
+
+        stompSession.subscribe(targetChannel, new StompFrameHandler() {
+
+            @Override
+            public Type getPayloadType(StompHeaders stompHeaders) {
+                return ChatMessage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders stompHeaders, Object receivedObject) {
+                listOfReceivedMessages.add((ChatMessage) receivedObject);
+            }
+        });
     }
 
     public void send(String targetChannel, Object objectToSend) {

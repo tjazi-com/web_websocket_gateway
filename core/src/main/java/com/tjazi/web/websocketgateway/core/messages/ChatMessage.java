@@ -7,7 +7,8 @@ package com.tjazi.web.websocketgateway.core.messages;
 /**
  * Message payload exchanged between WebSocket backend and the web-browser
  */
-public class ChatMessage {
+
+public class ChatMessage  {
 
     /**
      * This is content of the message.
