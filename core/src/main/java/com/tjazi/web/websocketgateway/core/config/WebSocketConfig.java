@@ -28,6 +28,8 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
         // below configuration based on article:
         // http://stackoverflow.com/questions/30413380/websocketstompclient-wont-connect-to-sockjs-endpoint
         registry.addEndpoint("/messages")
+                // this line is required to accept connections from browsers in other domains / origin
+                .setAllowedOrigins("*")
                 .withSockJS();
 
         RequestUpgradeStrategy upgradeStrategy = new TomcatRequestUpgradeStrategy();
